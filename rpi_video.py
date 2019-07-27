@@ -4,7 +4,9 @@ import threading
 from time import sleep
 import os, fcntl
 import cv2
-
+import select
+import shutil
+import time
 iframe = 0
 
 camera = PiCamera()
@@ -31,20 +33,24 @@ yolo_proc = Popen(["./darknet",
 
 fcntl.fcntl(yolo_proc.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
+stdout_buf = ""
 while True:
     try:
+        select.select([yolo_proc.stdout], [], [])
         stdout = yolo_proc.stdout.read()
-        if 'Enter Image Path' in stdout:
+        stdout_buf += stdout
+        if 'Enter Image Path' in stdout_buf:
             try:
                im = cv2.imread('predictions.png')
                print(im.shape)
                cv2.imshow('yolov3-tiny',im)
                key = cv2.waitKey(5) 
-            except Exception:
-               pass
+            except Exception as e:
+                print("Error:", e)
             camera.capture('frame.jpg')
             yolo_proc.stdin.write('frame.jpg\n')
+            stdout_buf = ""
         if len(stdout.strip())>0:
             print('get %s' % stdout)
-    except Exception:
-        pass
+    except Exception as e:
+        print("Error:", e)
