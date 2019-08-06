@@ -32,7 +32,7 @@ while True:
         if 'Enter Image Path' in stdout:
             try:
                im = cv2.imread('predictions.png')
-	       copyfile('predictions.png', 'frame%03d.png' % iframe)
+               copyfile('predictions.png', 'frame%03d.png' % iframe)
                iframe += 1 
                cv2.imshow('yolov3-tiny',im)
                key = cv2.waitKey(5)
