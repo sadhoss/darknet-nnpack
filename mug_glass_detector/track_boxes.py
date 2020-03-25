@@ -35,7 +35,7 @@ def get_boxes(input_string, frame_res):
             # ignore new objects that are located close to already tracking objects, with same label
             if detected_boxes:
                 for tracking_box in detected_boxes:
-                    if distance_less_then_threshold(box['x'], box['y'], tracking_box['x'], tracking_box['y']) and box['label'] == tracking_box['label']:
+                    if box['label'] == tracking_box['label'] and distance_less_then_threshold(box['x'], box['y'], tracking_box['x'], tracking_box['y']):
                         continue
 
             detected_boxes.append(box)
@@ -52,15 +52,16 @@ def distance_less_then_threshold(x1,y1, x2, y2, threshold=50):
         return False
 
 
-# track boxes based on location and repeated appearance
+# track boxes based on location and maintaining location
 def track_boxes(input_string, frame_res):
 
-    tracked_boxes = {
-        'center_coordinates' : [],
-        'label' : [],
-        'counter' : [],
-        'ticks' : []
-        }
+    tracked_boxes = []
+    #{
+    #'center_xy' : [],
+    #'label' : [],
+    #'gone_for_n_frames': [],
+    #'present_for_n_frames' : []
+    #}
 
     detected_boxes = get_boxes(input_string, frame_res)
     print('TEST - Printing box information: ')
@@ -68,17 +69,44 @@ def track_boxes(input_string, frame_res):
 
     # boxes detected 
     if detected_boxes:
+        # no tracked boxes
+        if not tracked_boxes:
+            for box in detected_boxes:
+                box['gone_for_n_frames'] = 0
+                box['present_for_n_frames'] = 1
+                track_boxes.append(box)
         # tracked boxes
-        if tracked_boxes['center_coordinates']:
-            for idx, coordinates in enumerate(tracked_boxes['center_coordinates']):
-                for 
-
-                
-        # new boxes
         else:
-            pass
+            for box in track_boxes:
+                match_found = False
+                box_index = None
+
+                for box_idx in range(len(detected_boxes)):
+                    new_box = detected_boxes[box_idx]
+                    if not match_found and box['label'] == new_box['label'] and distance_less_then_threshold(box['x'], box['y'], new_box['x'], new_box['y']):
+                        match_found = True
+                        box_index = box_idx
+                        box['gone_for_n_frames'] = 0
+                        box['present_for_n_frames'] += 1
+                
+                if match_found:
+                    detected_boxes.pop(box_index)
+                else:
+                    box['gone_for_n_frames'] -= 1
+            
+            # new boxes not currently tracked
+            for box in detected_boxes:
+                box['gone_for_n_frames'] = 0
+                box['present_for_n_frames'] = 1
+                track_boxes.append(box)
+
     # no boxes detected
     else: 
+        if tracked_boxes:
+            for box_idx in range(len(tracked_boxes)):
+                # remove if counter_threshold reaches -2
+                if tracked_boxes[box_idx]['gone_for_n_frames'] == -2:
+                    tracked_boxes.pop(box_idx)
 
     
 
