@@ -1,4 +1,4 @@
-
+import math
 
 
 
@@ -24,18 +24,32 @@ def get_boxes(input_string, frame_res):
             box = {}
 
             box['label'] = data[1][8:]
-            box['%'] = data[2][7:]
 
             # resolve relative coordinates
             box['x'], box['y'] = data[3].split('=')[1].split(',')
 
             # resolve frame center coordinates
-            box['x'] = box['x'] * frame_res[0]
-            box['y'] = box['y'] * frame_res[1]
+            box['x'] = float(box['x']) * frame_res[0]
+            box['y'] = float(box['y']) * frame_res[1]
+
+            # ignore new objects that are located close to already tracking objects, with same label
+            if detected_boxes:
+                for tracking_box in detected_boxes:
+                    if distance_less_then_threshold(box['x'], box['y'], tracking_box['x'], tracking_box['y']) and box['label'] == tracking_box['label']:
+                        continue
 
             detected_boxes.append(box)
 
     return detected_boxes
+
+
+def distance_less_then_threshold(x1,y1, x2, y2, threshold=50):
+    dist = math.hypot(x2 - x1, y2 - y2)
+
+    if dist < threshold:
+        return True
+    else:
+        return False
 
 
 # track boxes based on location and repeated appearance
@@ -54,11 +68,13 @@ def track_boxes(input_string, frame_res):
 
     # boxes detected 
     if detected_boxes:
-        # there are boxes we are tracking already
+        # tracked boxes
         if tracked_boxes['center_coordinates']:
-            pass
-            for coordinates
-        # new boxes we have not tracked yet
+            for idx, coordinates in enumerate(tracked_boxes['center_coordinates']):
+                for 
+
+                
+        # new boxes
         else:
             pass
     # no boxes detected
