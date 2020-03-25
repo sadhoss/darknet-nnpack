@@ -28,18 +28,14 @@ def get_boxes(input_string, frame_res):
 
             # resolve relative coordinates
             box['x'], box['y'] = data[3].split('=')[1].split(',')
-            box['w'], box['h'] = data[4].split('=')[1].split(',')
 
-            # resolve frame coordinates
+            # resolve frame center coordinates
             box['x'] = box['x'] * frame_res[0]
             box['y'] = box['y'] * frame_res[1]
-            box['w'] = box['w'] * frame_res[0]
-            box['h'] = box['h'] * frame_res[1]
 
             detected_boxes.append(box)
 
     return detected_boxes
-
 
 
 # track boxes based on location and repeated appearance
@@ -56,15 +52,16 @@ def track_boxes(input_string, frame_res):
     print('TEST - Printing box information: ')
     print(detected_boxes)
 
-    # detected boxes
+    # boxes detected 
     if detected_boxes:
         # there are boxes we are tracking already
         if tracked_boxes['center_coordinates']:
             pass
+            for coordinates
         # new boxes we have not tracked yet
         else:
             pass
-    # no new boxes
+    # no boxes detected
     else: 
 
     
