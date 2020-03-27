@@ -34,6 +34,7 @@ yolo_proc = Popen(["./darknet",
 
 fcntl.fcntl(yolo_proc.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
+tracked_boxes = []
 stdout_buf = ""
 while True:
     try:
