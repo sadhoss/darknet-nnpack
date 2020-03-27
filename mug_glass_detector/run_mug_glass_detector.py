@@ -2,7 +2,8 @@ from picamera import PiCamera
 from subprocess import Popen, PIPE
 import threading
 from time import sleep
-import os, fcntl
+import os
+import fcntl
 import cv2
 import select
 import shutil
@@ -11,7 +12,7 @@ iframe = 0
 
 camera = PiCamera()
 
-#Yolo v3 is a full convolutional model. It does not care the size of input image, as long as h and w are multiplication of 32
+# Yolo v3 is a full convolutional model. It does not care the size of input image, as long as h and w are multiplication of 32
 
 #camera.resolution = (160,160)
 #camera.resolution = (416, 416)
@@ -23,13 +24,13 @@ camera.resolution = (608, 608)
 camera.capture('frame.jpg')
 sleep(0.1)
 
-#spawn darknet process
+# spawn darknet process
 yolo_proc = Popen(["./darknet",
                    "detect",
                    "./cfg/yolov3-tiny.cfg",
                    "./yolov3-tiny.weights",
-                   "-thresh","0.1"],
-                   stdin = PIPE, stdout = PIPE)
+                   "-thresh", "0.1"],
+                  stdin=PIPE, stdout=PIPE)
 
 fcntl.fcntl(yolo_proc.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -41,10 +42,10 @@ while True:
         stdout_buf += stdout
         if 'Enter Image Path' in stdout_buf:
             try:
-               im = cv2.imread('predictions.png')
-               print(im.shape)
-               cv2.imshow('yolov3-tiny',im)
-               key = cv2.waitKey(5) 
+                im = cv2.imread('predictions.png')
+                print(im.shape)
+                cv2.imshow('yolov3-tiny', im)
+                key = cv2.waitKey(5)
             except Exception as e:
                 print("Error:", e)
             camera.capture('frame.jpg')
