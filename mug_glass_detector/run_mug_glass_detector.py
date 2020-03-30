@@ -8,6 +8,12 @@ import cv2
 import select
 import shutil
 import time
+
+import multiprocessing as mp
+
+
+from mug_glass_detector.track_boxes import track_boxes, alert
+
 iframe = 0
 
 camera = PiCamera()
@@ -34,7 +40,13 @@ yolo_proc = Popen(["./darknet",
 
 fcntl.fcntl(yolo_proc.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
+
+# oerview of tracking boxes
+global tracked_boxes
 tracked_boxes = []
+# process
+p1 = None
+
 stdout_buf = ""
 while True:
     try:
@@ -53,6 +65,29 @@ while True:
             yolo_proc.stdin.write('frame.jpg\n')
             stdout_buf = ""
         if "Predicted" in stdout.strip():
-            print('get %s' % stdout)
+            # init first parallel process on first frame
+            if p1 == None:
+                print('get %s' % stdout)
+
+                # start a new process for tracking
+                p1 = mp.Process(target=tracked_boxes, args=(
+                    str(stdout), camera.resolution))
+                p1.start()
+
+            # join process to main code
+            else:
+                # finish process, before starting a new process
+                p1.join()
+
+                # check tracking summary
+                alert()
+
+                print('get %s' % stdout)
+
+                # start a seperate process for tracking
+                p1 = mp.Process(target=tracked_boxes, args=(
+                    str(stdout), camera.resolution))
+                p1.start()
+
     except Exception as e:
         print("Error:", e)
