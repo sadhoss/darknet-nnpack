@@ -52,7 +52,8 @@ def distance_less_then_threshold(x1, y1, x2, y2, threshold=50):
 
 
 # print alert if boxes maintain location
-def alert(tracked_boxes):
+def alert():
+    global tracked_boxes
     for box in track_boxes:
         if box['present_for_n_frames'] == 3:
             print('')
@@ -63,7 +64,9 @@ def alert(tracked_boxes):
 
 
 # track boxes based on location and maintaining location
-def track_boxes(input_string, frame_res, tracked_boxes):
+def track_boxes(input_string, frame_res):
+    global tracked_boxes
+
     detected_boxes = get_boxes(input_string, frame_res)
     print('TEST - Printing box information: ')
     print(detected_boxes)
@@ -75,11 +78,11 @@ def track_boxes(input_string, frame_res, tracked_boxes):
             for d_box in detected_boxes:
                 d_box['gone_for_n_frames'] = 0
                 d_box['present_for_n_frames'] = 1
-                track_boxes.append(d_box)
+                tracked_boxes.append(d_box)
         # tracked boxes
         else:
             remove_boxes = []
-            for t_idx, t_box in enumerate(track_boxes):
+            for t_idx, t_box in enumerate(tracked_boxes):
                 match_found = False
                 box_index = None
 
