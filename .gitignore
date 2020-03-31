@@ -1,3 +1,8 @@
+# weights dirty dishes dataset
+ddd_yolov3_tiny/
+
+
+
 *.o
 *.dSYM
 *.csv
