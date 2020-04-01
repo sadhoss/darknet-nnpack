@@ -27,7 +27,7 @@ def get_boxes(input_string):
             # <Box 0: class <glass/mug>: prob 16%: (x,y)=(0.123,0.123): (w,h)=(0.123,0.123)>
             box = {}
 
-            box['label'] = data[1][8:]
+            box['label'] = data[1].strip().split(' ')[1]
 
             # resolve relative coordinates
             box['x'], box['y'] = data[3].split('=')[1].strip("()").split(',')
@@ -73,7 +73,7 @@ def alert():
             print('')
 
 
-# track boxes based on location and maintaining location
+# track boxes based on location and persistent location
 def track_boxes(input_string):
     global tracked_boxes
     detected_boxes = get_boxes(input_string)
@@ -82,6 +82,7 @@ def track_boxes(input_string):
     if detected_boxes:
         # no tracked boxes
         if not tracked_boxes:
+            print("init tracked boxes?")
             for d_box in detected_boxes:
                 d_box['gone_for_n_frames'] = 0
                 d_box['present_for_n_frames'] = 1
@@ -134,3 +135,4 @@ def track_boxes(input_string):
 
             for idx in reversed(remove_boxes):
                 tracked_boxes.pop(idx)
+    print("after tracking: ", tracked_boxes)
