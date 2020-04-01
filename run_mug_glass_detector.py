@@ -44,79 +44,11 @@ yolo_proc = Popen(["./darknet",
 fcntl.fcntl(yolo_proc.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 
-track_boxes.init_tracked_boxes_var()
+#track_boxes.init_tracked_boxes_var()
 
-
-
-
-
-'''
-Ver 2.0
-
-
-global stdout_buf
-
-
-def main_process():
-    global stdout_buf
-    
-    try:
-        select.select([yolo_proc.stdout], [], [])
-        stdout = yolo_proc.stdout.read()
-        stdout_buf += stdout
-        if 'Enter Image Path' in stdout_buf:
-            try:
-                im = cv2.imread('predictions.png')
-                #print(im.shape)
-                cv2.imshow('yolov3-tiny', im)
-                key = cv2.waitKey(5)
-            except Exception as e:
-                print("Error:", e)
-            camera.capture('frame.jpg')
-            yolo_proc.stdin.write('frame.jpg\n')
-            stdout_buf = ""
-        if "Enter Image Path" in stdout.strip():
-            print('get %s' % stdout)
-            return str(stdout)
-        return '-1'
-    except Exception as e:
-        print("Error:", e)
-    
-def run_detector():
-    global stdout_buf
-    
-    new_img = False
-    stdout_buf = ""
-    
-    results = main_process()
-    print('FIRST main RUNN')
-    
-    while True:
-        print('test: alert')
-        track_boxes.alert()
-        
-        print('loop main process')
-        p1 = mp.Process(target=main_process)
-        p1.start()
-        
-        print('results: ', results)
-        if results != -1:
-            print('test tracking on results')
-            p2 = mp.Process(target=track_boxes.track_boxes, args=(results,))
-            p2.start()
-
-        if results != -1: 
-            p2.join()
-        results = p1.join()
-        
-        print('joined and new loop coming')
-        
-
-# start 
-run_detector()
-
-
-'''
+manager = mp.Manager()
+tracked_boxes = manager.list()
+# [{'x' : -1, 'y' : -1, 'label' : '-1', 'gone_for_n_frames' : 3, 'present_for_n_frames' : -1}]
 
 stdout_buf = ''
 p1 = None
@@ -137,25 +69,29 @@ while True:
             camera.capture('frame.jpg')
             yolo_proc.stdin.write('frame.jpg\n')
             stdout_buf = ""
-        if "Enter Image Path" in stdout.strip():
+            
+        #if len(stdout.strip()) > 0:
             print('get %s' % stdout)
-            temp_str = str(stdout)
+            #temp_str = str(stdout)
             # init first parallel process on first frame
             if p1 == None:
                 # start a new process for tracking
-                p1 = mp.Process(target=track_boxes.track_boxes, args=(temp_str,))
+                p1 = mp.Process(target=track_boxes.track_boxes, args=(stdout, tracked_boxes))
                 p1.start()
 
             # join process to main code
             else:
                 # finish process, before starting a new process
+                print("what")
                 p1.join()
-
+                print("what")
+                
+                print("")
                 # check tracking summary
-                track_boxes.alert()
+                track_boxes.alert(tracked_boxes)
 
                 # start new tracking process
-                p1 = mp.Process(target=track_boxes.track_boxes, args=(temp_str,))
+                p1 = mp.Process(target=track_boxes.track_boxes, args=(stdout, tracked_boxes))
                 p1.start()
 
     except Exception as e:

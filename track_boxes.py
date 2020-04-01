@@ -1,17 +1,21 @@
 import math
+import copy
 
+'''
 global tracked_boxes
 
 def init_tracked_boxes_var():
     global tracked_boxes
     tracked_boxes = []
+'''
+
 
 # input_string
 # samples:
 # <Enter Image Path: \nget frame.jpg: Predicted in 0.789 seconds. \nBox 0: class <glass/mug>: prob 16%: (x,y)=(0.123,0.123): (w,h)=(0.123,0.123)\n>
 #
 # Resolve all boxes from string
-def get_boxes(input_string):
+def get_boxes(input_string, tracking_boxes):
     frame_res = [416, 416]
     detected_boxes = []
 
@@ -22,7 +26,7 @@ def get_boxes(input_string):
             if len(data) != 5:
                 print("Prediction returened invalid output: ", n)
                 print("Expected 4 'colon' seperators, found: ", (len(data) - 1))
-                quit()
+                return detected_boxes
 
             # <Box 0: class <glass/mug>: prob 16%: (x,y)=(0.123,0.123): (w,h)=(0.123,0.123)>
             box = {}
@@ -38,8 +42,8 @@ def get_boxes(input_string):
 
             # ignore new objects that are located close to already tracking objects, with same label
             if detected_boxes:
-                for tracking_box in detected_boxes:
-                    if box['label'] == tracking_box['label'] and distance_less_then_threshold(box['x'], box['y'], tracking_box['x'], tracking_box['y']):
+                for t_box in tracking_boxes:
+                     if box['label'] == t_box['label'] and distance_less_then_threshold(box['x'], box['y'], t_box['x'], t_box['y']):
                         continue
 
             detected_boxes.append(box)
@@ -58,13 +62,11 @@ def distance_less_then_threshold(x1, y1, x2, y2, threshold=50):
 
 
 # print alert if boxes maintain location
-def alert():
-    global tracked_boxes
+def alert(tracked_boxes):
+    #global tracked_boxes
     
-    print('TEASTING - ALERT')
-    
-    print('TRACKED_BOXES: ', tracked_boxes)
-    for box in tracked_boxes:
+    print('ALERT TRACKED_BOXES: ', list(tracked_boxes))
+    for idx, box in enumerate(tracked_boxes):
         if box['present_for_n_frames'] == 3:
             print('')
             print('')
@@ -74,9 +76,9 @@ def alert():
 
 
 # track boxes based on location and persistent location
-def track_boxes(input_string):
-    global tracked_boxes
-    detected_boxes = get_boxes(input_string)
+def track_boxes(input_string, tracked_boxes):
+    #global tracked_boxes
+    detected_boxes = get_boxes(input_string, tracked_boxes)
 
     # boxes detected
     if detected_boxes:
@@ -89,50 +91,106 @@ def track_boxes(input_string):
                 tracked_boxes.append(d_box)
         # tracked boxes
         else:
-            remove_boxes = []
+            remove_boxes_t = []
+            remove_boxes_d = []
+            tmp_t_boxes_2 = []
+
             for t_idx, t_box in enumerate(tracked_boxes):
                 match_found = False
-                box_index = None
-
-                for d_idx, d_box in detected_boxes:
+                
+                for d_idx, d_box in enumerate(detected_boxes):
                     # update info on tracked objects still in the frame
                     if not match_found and t_box['label'] == d_box['label'] and distance_less_then_threshold(t_box['x'], t_box['y'], d_box['x'], d_box['y']):
                         match_found = True
-                        box_index = d_idx
-                        t_box['gone_for_n_frames'] = 0
-                        t_box['present_for_n_frames'] += 1
+                        remove_boxes_d.append(d_idx)
+                        
+                        #t_box['gone_for_n_frames'] = 0 
+                        #t_box['present_for_n_frames'] += 1 
+                        
+                        box = {}
+                        box['label'] = t_box['label']
+                        box['x'] = t_box['x']
+                        box['y'] = t_box['y']
+                        box['gone_for_n_frames'] =  0 #t_box['gone_for_n_frames']
+                        box['present_for_n_frames'] = t_box['present_for_n_frames'] + 1
+                        
+                        tmp_t_boxes_2.append(box)
+                        
 
-                # remove matching objects from detect list
-                if match_found:
-                    detected_boxes.pop(box_index)
-                # count down tracked objects not detected
-                else:
-                    t_box['gone_for_n_frames'] -= 1
-                    if t_box['gone_for_n_frames'] <= -2:
-                        remove_boxes.append(t_idx)
+                if not match_found:
+                    #t_box['gone_for_n_frames'] -= 1
+                    #if t_box['gone_for_n_frames'] <= -2:
+                    #    remove_boxes_t.append(t_idx)
+                    if t_box['gone_for_n_frames'] > -1:
+                        box = {}
+                        box['label'] = t_box['label']
+                        box['x'] = t_box['x']
+                        box['y'] = t_box['y']
+                        box['gone_for_n_frames'] =  t_box['gone_for_n_frames'] - 1
+                        box['present_for_n_frames'] = t_box['present_for_n_frames']
+                        
+                        tmp_t_boxes_2.append(box)
+                        
 
+            # remove detected objects matching traced objects
+            for idx in reversed(remove_boxes_d):
+                detected_boxes.pop(idx)
+
+            '''
             # remove tracked objects gone for 3 consecutive frames
-            for idx in reversed(remove_boxes):
+            for idx in reversed(remove_boxes_t):
                 tracked_boxes.pop(idx)
+                
+            # due to parallel processing, we need to deepcopy an instance
+            tmp_t_boxes = copy.deepcopy(tracked_boxes)
+            
+            print("tmp_t_boxes: ", tmp_t_boxes)
+            
+            tmp_t_boxes_2 = []
+            
+            for t_box in tracked_boxes:
+                box = {}
+
+                box['label'] = t_box['label']
+                box['x'] = t_box['x']
+                box['y'] = t_box['y']
+                box['gone_for_n_frames'] = t_box['gone_for_n_frames']
+                box['present_for_n_frames'] = t_box['present_for_n_frames']
+                
+                tmp_t_boxes_2.append(box)
+            '''
+            
+            print('')
+            print('tmp_t_boxes_2: ', tmp_t_boxes_2)
+            print('')
+            
+            for i in range(len(tracked_boxes) - 1, -1, -1):
+                tracked_boxes.pop(i)
+                
+            for tmp_box in tmp_t_boxes_2:
+                tracked_boxes.append(tmp_box)
+            
+            #for n in tmp_t_boxes:
+            #    tracked_boxes.append(n)
 
             # start tracking new detected boxes
             for d_box in detected_boxes:
                 d_box['gone_for_n_frames'] = 0
                 d_box['present_for_n_frames'] = 1
-                track_boxes.append(d_box)
+                tracked_boxes.append(d_box)
 
     # no boxes detected
     else:
         if tracked_boxes:
             remove_boxes = []
-            for t_idx, box in tracked_boxes:
+            for t_idx, box in enumerate(tracked_boxes):
                 # remove if counter_threshold is about to reach -2
                 if box['gone_for_n_frames'] == -1:
                     remove_boxes.append(t_idx)
                 # count number of frames tracked object has been gone for
                 else:
                     box['gone_for_n_frames'] -= 1
-
+                    
             for idx in reversed(remove_boxes):
                 tracked_boxes.pop(idx)
-    print("after tracking: ", tracked_boxes)
+    print("after tracking: ", list(tracked_boxes))
