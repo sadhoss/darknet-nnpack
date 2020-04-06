@@ -67,7 +67,7 @@ def alert(tracked_boxes):
     
     print('ALERT TRACKED_BOXES: ', list(tracked_boxes))
     for idx, box in enumerate(tracked_boxes):
-        if box['present_for_n_frames'] == 3:
+        if box['present_for_n_frames'] >= 3:
             print('')
             print('')
             print('SHAME, SHAME, SHAME')
@@ -82,6 +82,7 @@ def track_boxes(input_string, tracked_boxes):
 
     # boxes detected
     if detected_boxes:
+        print('detected_boxes: ', detected_boxes)
         # no tracked boxes
         if not tracked_boxes:
             print("init tracked boxes?")
@@ -91,7 +92,6 @@ def track_boxes(input_string, tracked_boxes):
                 tracked_boxes.append(d_box)
         # tracked boxes
         else:
-            remove_boxes_t = []
             remove_boxes_d = []
             tmp_t_boxes_2 = []
 
@@ -104,23 +104,17 @@ def track_boxes(input_string, tracked_boxes):
                         match_found = True
                         remove_boxes_d.append(d_idx)
                         
-                        #t_box['gone_for_n_frames'] = 0 
-                        #t_box['present_for_n_frames'] += 1 
-                        
                         box = {}
                         box['label'] = t_box['label']
                         box['x'] = t_box['x']
                         box['y'] = t_box['y']
-                        box['gone_for_n_frames'] =  0 #t_box['gone_for_n_frames']
+                        box['gone_for_n_frames'] = 0
                         box['present_for_n_frames'] = t_box['present_for_n_frames'] + 1
                         
                         tmp_t_boxes_2.append(box)
                         
 
                 if not match_found:
-                    #t_box['gone_for_n_frames'] -= 1
-                    #if t_box['gone_for_n_frames'] <= -2:
-                    #    remove_boxes_t.append(t_idx)
                     if t_box['gone_for_n_frames'] > -1:
                         box = {}
                         box['label'] = t_box['label']
@@ -131,66 +125,38 @@ def track_boxes(input_string, tracked_boxes):
                         
                         tmp_t_boxes_2.append(box)
                         
-
-            # remove detected objects matching traced objects
-            for idx in reversed(remove_boxes_d):
-                detected_boxes.pop(idx)
-
-            '''
-            # remove tracked objects gone for 3 consecutive frames
-            for idx in reversed(remove_boxes_t):
-                tracked_boxes.pop(idx)
-                
-            # due to parallel processing, we need to deepcopy an instance
-            tmp_t_boxes = copy.deepcopy(tracked_boxes)
-            
-            print("tmp_t_boxes: ", tmp_t_boxes)
-            
-            tmp_t_boxes_2 = []
-            
-            for t_box in tracked_boxes:
-                box = {}
-
-                box['label'] = t_box['label']
-                box['x'] = t_box['x']
-                box['y'] = t_box['y']
-                box['gone_for_n_frames'] = t_box['gone_for_n_frames']
-                box['present_for_n_frames'] = t_box['present_for_n_frames']
-                
-                tmp_t_boxes_2.append(box)
-            '''
-            
-            print('')
-            print('tmp_t_boxes_2: ', tmp_t_boxes_2)
-            print('')
             
             for i in range(len(tracked_boxes) - 1, -1, -1):
                 tracked_boxes.pop(i)
                 
             for tmp_box in tmp_t_boxes_2:
                 tracked_boxes.append(tmp_box)
-            
-            #for n in tmp_t_boxes:
-            #    tracked_boxes.append(n)
 
             # start tracking new detected boxes
-            for d_box in detected_boxes:
-                d_box['gone_for_n_frames'] = 0
-                d_box['present_for_n_frames'] = 1
-                tracked_boxes.append(d_box)
+            for d_idx, d_box in enumerate(detected_boxes):
+                if not d_idx in remove_boxes_d:
+                    d_box['gone_for_n_frames'] = 0
+                    d_box['present_for_n_frames'] = 1
+                    tracked_boxes.append(d_box)
 
     # no boxes detected
     else:
         if tracked_boxes:
-            remove_boxes = []
-            for t_idx, box in enumerate(tracked_boxes):
+            tmp_t_boxes_2 = []
+            for t_idx, t_box in enumerate(tracked_boxes):
                 # remove if counter_threshold is about to reach -2
-                if box['gone_for_n_frames'] == -1:
-                    remove_boxes.append(t_idx)
-                # count number of frames tracked object has been gone for
-                else:
-                    box['gone_for_n_frames'] -= 1
+                if t_box['gone_for_n_frames'] > -1:
+                    box = {}
+                    box['label'] = t_box['label']
+                    box['x'] = t_box['x']
+                    box['y'] = t_box['y']
+                    box['gone_for_n_frames'] =  t_box['gone_for_n_frames'] - 1
+                    box['present_for_n_frames'] = t_box['present_for_n_frames']
                     
-            for idx in reversed(remove_boxes):
-                tracked_boxes.pop(idx)
-    print("after tracking: ", list(tracked_boxes))
+                    tmp_t_boxes_2.append(box)
+                    
+            for i in range(len(tracked_boxes) - 1, -1, -1):
+                tracked_boxes.pop(i)
+                
+            for tmp_box in tmp_t_boxes_2:
+                tracked_boxes.append(tmp_box)

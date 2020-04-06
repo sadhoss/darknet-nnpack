@@ -82,9 +82,7 @@ while True:
             # join process to main code
             else:
                 # finish process, before starting a new process
-                print("what")
                 p1.join()
-                print("what")
                 
                 print("")
                 # check tracking summary
